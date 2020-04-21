@@ -403,7 +403,7 @@ class App:
 			# test if a key has been press
 			code = eval_js('resetCode()')
 			if code != False:
-				self.savepic(code=code)
+				self.savepic(code)
 				pass
 
 			# Test if we go on
