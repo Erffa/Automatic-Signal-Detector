@@ -202,7 +202,7 @@ js = Javascript('''
 // save / reset last pressed key
 var code = false;
 document.addEventListener('keypress', logKey);  
-function logKey(e) { code = e.code; }
+function logKey(e) { code = e.key.toUpperCase(); }
 function resetCode(e) {
   let memo = code;
   code = false;
@@ -240,34 +240,7 @@ class App:
 	COLOR1 = np.array((0., 60., 32.)) # np.array((25., 76., 102.))
 	COLOR2 = np.array((180., 255., 255.)) # np.array((125., 130., 204.))
 	# SAVE IMAGES
-	DICT = { 
-		'KeyA':'A',
-		'KeyB':'B',
-		'KeyC':'C',
-		'KeyD':'D',
-		'KeyE':'E',
-		'KeyF':'F',
-		'KeyG':'G',
-		'KeyH':'H',
-		'KeyI':'I',
-		'KeyJ':'J',
-		'KeyK':'K',
-		'KeyL':'L',
-		'KeyM':'M',
-		'KeyN':'N',
-		'KeyO':'O',
-		'KeyP':'P',
-		'KeyQ':'Q',
-		'KeyR':'R',
-		'KeyS':'S',
-		'KeyT':'T',
-		'KeyU':'U',
-		'KeyV':'V',
-		'KeyW':'W',
-		'KeyX':'X',
-		'KeyY':'Y',
-		'KeyZ':'Z',
-	}
+	LETTERS = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
   
 	def __init__(self):
 		self.full_box = np.array([0,0,640,480]) #self.w,self.h])
@@ -289,9 +262,8 @@ class App:
 		warnings.filterwarnings("ignore")
 		# set the height of the cell
 		display(Javascript('''google.colab.output.setIframeHeight(0, true, {maxHeight: 680});'''))
-		# register the functions
-		output.register_callback('camshift', self.camshift) 
-		output.register_callback('savepic', self.savepic)
+		# register the function
+		output.register_callback('camshift', self.camshift)
 		# upload the html
 		display(html)
 		display(js)
@@ -444,11 +416,10 @@ class App:
 		img = cutter(self.prob, self.square_box)
 
 		# get the letter
-		code = kwargs['code']
-		letter = ''
-		if code in App.DICT:
-			letter = App.DICT[code]
-		else:
+		letter = kwargs['code']
+
+		# filter some letters ?
+		if not letter in App.LETTERS:
 			return
 
 		# get the number
