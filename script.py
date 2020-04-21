@@ -189,8 +189,8 @@ def update_tally(path):
 	reader.close()
 
 	# update the js
- 	for letter in tally:
- 		display(Javascript('document.getElementById("letter-' + letter + '-count").innerHTML=' + str(tally[letter]) ))
+	for letter in tally:
+		display(Javascript('document.getElementById("letter-' + letter + '-count").innerHTML=' + str(tally[letter]) ))
 	return
 
 
@@ -473,4 +473,4 @@ class App:
 		update_tally(savedir+textfile)
 
 		return
- 
+  
