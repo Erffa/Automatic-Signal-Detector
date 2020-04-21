@@ -93,10 +93,10 @@ def centered_square_box(box):
 	box = np.array(box).reshape(-1)
 	center = (box[2:]+box[:2])/2
 	size = np.min(box[2:]-box[:2])
-	xmin = center[0]-margin
-	xmax = xmin+size
-	ymin = center[1]-margin
-	ymax = ymin+size
+	xmin = center[0]-size
+	xmax = center[0]+size
+	ymin = center[1]-size
+	ymax = center[1]+size
 	return np.array([xmin,ymin,xmax,ymax]).astype(np.uint32)
 
 def cutter(img, box, copy=False):
@@ -447,9 +447,9 @@ class App:
 		code = kwargs['code']
 		letter = ''
 		if code in App.DICT:
-		  letter = App.DICT[code]
+			letter = App.DICT[code]
 		else:
-		  return
+			return
 
 		# get the number
 		l = os.listdir("./gdrive/My Drive/Colab Notebooks/storage")
