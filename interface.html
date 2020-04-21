@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>CVML Project</title>
+	<meta charset='utf-8'>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<link href='https://fonts.googleapis.com/css?family=Stalemate' rel='stylesheet'>
+	<style>
+/* la page */
+body {
+  position: relative;
+  width: 960px;
+  height: 638px;
+  background-image:  url("https://cdn.pixabay.com/photo/2018/04/13/14/56/flower-3316681_960_720.jpg");
+  background-color: #cca0bb;
+  font-family: 'Stalemate';
+	line-height: normal;
+	margin: 0px;
+	padding: 8px;
+}
+
+.panel {
+	background-color: #ff989877;
+	outline: 5px solid #f9454577;
+	outline-offset: 0px;
+	overflow: hidden;
+}
+.panel .title {
+	height: 42px;
+	font-size: 37px;
+	text-align: center;
+}
+.but {
+	font: italic 25px 'Stalemate';
+	color: red;
+	text-align: center;
+	background-color: #fbfd5ccc;
+	border: 2px solid #ffde43cc;
+	transition-duration: 0.4s;
+	border-radius: 5px;
+}
+.but:hover {
+	background-color: #fbfd5c;
+}
+
+/* the left part */
+#left-area {
+	float: left;
+}
+#left-area .panel {
+	margin: 20px;
+	width: 180px;
+}
+
+/* - webcam-panel */
+/* -- video */
+#webcam-handler {
+	width: 180px;
+	height: 140px
+}
+#webcam {
+	width:160px;
+	height:120px;	
+	margin: 10px;
+	transform: scaleX(-1);
+	background-color: #cca0bbaa;
+}
+/* -- button */
+.but-handler {
+	padding: 0px 10px 10px 10px;
+}
+.but-handler .but {
+	float: left;
+	width: 70px;
+	height: 40px;
+	margin: 0px 5px 10px 5px;
+}
+
+/* - data-panel */
+#data-panel table {
+	width: 164px;
+	table-layout: fixed;
+	text-align: center;
+	background-color: #ffffff77;
+	border-collapse: collapse;
+	border-spacing: 0;
+	border: 1px solid #ddd;
+	margin: 0;
+}
+#data-panel table tr {
+	height: 30px;
+}
+#data-panel table th {
+	font-size: 30px;
+	font-weight: normal;
+	border-bottom: 1px solid;
+    margin-bottom: -1px;
+}
+#data-panel table td {
+	font-style: bold;
+}
+/* - - tables - - */
+#table-handler {
+	height: 150px;
+	overflow-y: auto;
+}
+#tally td {
+	font-family: "Arial";
+	font-size: 14px;
+}
+
+/* img panel */
+#img-panel {
+	position: absolute;
+	left: 240px;
+	top: 28px;
+	padding: 20px;
+}
+#image {
+	margin-top: 15px;
+	height: 480px;
+	width: 640px;
+}
+/* - memo - */
+#myImg {
+  border-radius: 5px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  padding-top: 100px; /* Location of the box */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgb(0,0,0); /* Fallback color */
+  background-color: rgba(0,0,0,0.9); /* Black w/ opacity */
+}
+.modal-content {
+  margin: auto;
+  display: block;
+}
+.close {
+  position: absolute;
+  top: 15px;
+  right: 35px;
+  color: #f1f1f1;
+  font-size: 40px;
+  font-weight: bold;
+  transition: 0.3s;
+}
+
+.close:hover,
+.close:focus {
+  color: #bbb;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+	</style>
+</head>
+<body>
+
+<div id="left-area">
+
+	<div id="webcam-panel" class="panel">
+		<div class="title">Webcam :</div>
+		<div id="webcam-handler">
+			<video id="webcam" autoplay>Video stream not available.</video>
+		</div>
+		<div id="webcam-but-handler" class="but-handler">
+			<button id="webcam-but-start" class="but">Start</button>
+			<button id="webcam-but-stop" class="but">Stop</button>
+		</div>
+	</div>
+
+	<div id="camshift-panel" class="panel">
+		<div class="title">Camshift :</div>
+		<div id="camshift-but-handler" class="but-handler">
+			<button id="camshift-but-start" class="but">Start</button>
+			<button id="camshift-but-stop" class="but">Stop</button>
+		</div>
+	</div>
+
+	<div id="data-panel" class="panel">
+		<div class="title">Images :</div>
+		<div id="table-handler">
+			<table><tr><th>letter</th><th>count</th></tr></table>
+			<table id="tally">
+<script>
+var alphabet = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
+var tally = document.getElementById("tally")
+for (const idx in alphabet) {
+	let letter = alphabet[idx];
+	tally.innerHTML += `<tr><td>${letter}</td><td id="letter-${letter}-count">0</td></tr>`;
+}
+</script>
+			</table>
+		</div>
+	</div>
+
+</div>
+
+<div id="img-panel" class="panel">
+	<div class="title">
+		<button id="memo" class="but">Memo</button>
+		<div id="myModal" class="modal">
+			<span class="close">&times;</span>
+			<img class="modal-content" id="img01" 
+			src="https://i.pinimg.com/originals/fa/bb/70/fabb7087b0cffe30530e7df9ec1d0b88.png"
+			alt="hand sign"
+			width="317" height="450">
+		</div>
+	</div>
+	<img id="image"></img>
+</div>
+
+</body>
+<script>
+
+// START AND STOP VIDEO
+var video = document.getElementById('webcam');// 
+var stream = null; // the stream to listen to the webcam
+
+async function start () {
+	if (stream === null) {
+		stream = await navigator.mediaDevices.getUserMedia(
+		{video: {facingMode: "environment"}});
+		video.srcObject = stream;
+		await video.play();
+	}
+}
+
+function stop () { 
+	if (stream !== null) {
+		video.pause()
+		stream.getTracks().forEach(function(track) { track.stop(); });
+		stream = null;
+	}
+}
+
+document.getElementById("webcam-but-start").onclick = function () { start(); }
+document.getElementById("webcam-but-stop").onclick = function () { stop(); }
+
+function webcam_is_on () { return stream !== null; }
+
+// SHOW AND CAPTURE A PICTURE
+var canvas =  document.createElement('canvas');
+var image = document.getElementById("image");
+
+function showimg (imgb64) { image.src = imgb64; }
+
+async function capture(){
+  return await new Promise( // wait for the promise to be completed
+  	function (resolve, reject) {
+			pendingResolve = resolve;
+			// set width and height to match the webcam
+			canvas.width = video.videoWidth; 
+			canvas.height = video.videoHeight;
+			canvas.getContext('2d').drawImage(video, 0, 0); // draw the video onto it
+			result = canvas.toDataURL('image/jpeg', 0.8); // screenshot the canvas
+			pendingResolve(result); })}
+
+// CODE FOR THE MEMO BUTTON 
+// make the button responsive
+var modal = document.getElementById("myModal");
+var modalImg = document.getElementById("img01");
+var memo = document.getElementById("memo")
+memo.onclick = function(){ modal.style.display = "block"; }
+// close when cross is pressed
+var span = document.querySelector("#myModal .close");
+span.onclick = function () { modal.style.display = "none"; }
+</script>
+</html>
