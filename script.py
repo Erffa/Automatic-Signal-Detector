@@ -92,7 +92,7 @@ def centered_square_box(box):
 	'''
 	box = np.array(box).reshape(-1)
 	center = (box[2:]+box[:2])/2
-	size = np.min(box[2:]-box[:2])
+	size = np.min(box[2:]-box[:2])/2
 	xmin = center[0]-size
 	xmax = center[0]+size
 	ymin = center[1]-size
@@ -242,7 +242,11 @@ class App:
 	# SAVE IMAGES
 	LETTERS = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
   
-	def __init__(self):
+	def __init__(self, savedir, textfile):
+		#
+		self.savedir = savedir
+		self.textfile = textfile
+		#
 		self.full_box = np.array([0,0,640,480]) #self.w,self.h])
 		# dimensions of the image
 		self.w = 640
@@ -409,21 +413,18 @@ class App:
 		return
 	
 
-	def savepic(self, **kwargs):
-		#try:
+	def savepic(self, letter):
+		
+		# only letters
+		if not letter in App.LETTERS:
+			return
+
 		# cut the image, make it square
 		self.square_box = centered_square_box(self.search_area)
 		img = cutter(self.prob, self.square_box)
 
-		# get the letter
-		letter = kwargs['code']
-
-		# filter some letters ?
-		if not letter in App.LETTERS:
-			return
-
 		# get the number
-		l = os.listdir("./gdrive/My Drive/Colab Notebooks/storage")
+		l = os.listdir(self.savedir)
 		idx = 1
 		while "{}_{}_{}.jpg".format(letter, idx, 16) in l:
 			idx += 1
@@ -436,11 +437,11 @@ class App:
 		img16 = cv2.resize(img,(16,16))
 		img224 = cv2.resize(img,(224,224))
 
-		cv2.imwrite(savedir + name16, img16)
-		cv2.imwrite(savedir + name224, img224)
+		cv2.imwrite(self.savedir + name16, img16)
+		cv2.imwrite(self.savedir + name224, img224)
 
 		# add to file, update tally
-		add_image(savedir+textfile, letter, img16)
-		update_tally(savedir+textfile)
+		add_image(self.savedir+self.textfile, letter, img16)
+		update_tally(self.savedir+self.textfile)
 
 		return
