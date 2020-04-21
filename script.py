@@ -343,9 +343,9 @@ class App:
 					best_rect=rect
 					best_area=area
 					pass
-			  	pass
+				pass
 			pass
-		  	return best_rect
+			return best_rect
 
 	def compute_hist(self, img, box):
 		hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -455,8 +455,8 @@ class App:
 		l = os.listdir("./gdrive/My Drive/Colab Notebooks/storage")
 		idx = 1
 		while "{}_{}_{}.jpg".format(letter, idx, 16) in l:
-		  idx += 1
-		  pass
+			idx += 1
+			pass
 
 		# save the images
 		name16 = "{}_{}_16.jpg".format(letter, idx)
@@ -473,4 +473,3 @@ class App:
 		update_tally(savedir+textfile)
 
 		return
-  
