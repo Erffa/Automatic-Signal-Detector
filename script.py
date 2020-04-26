@@ -216,37 +216,45 @@ def photo_html(num, b64, letter):
 '''.format(num,b64,letter)
 
 def print_textfile(path):
-  display(HTML('''
-  <html>
-    <head>
-      <style>
-  .photo {
-    position: relative;
-    float: left;
-    width: 100px;
-  }
-  .background {
-    width: 100px;
-    height: 100px; 
-    left: 0px; 
-    top: 0px; 
-    z-index: -1;
-  }
-  .stretch {
-      width:100%;
-      height:100%;
-  }
-  #gallery {
-    height: 150px;
-    width: 1000px;
-  }
-      </style>
-    </head>
-    <body>
-      <div id="gallery"></div>
-    </body>
-  </html>
-  '''))
+	  display(HTML('''
+<html>
+	<head>
+		<style>
+.photo {
+	position: relative;
+	float: left;
+	width: 100px;
+}
+.background {
+	width: 100px;
+	height: 100px; 
+	left: 0px; 
+	top: 0px; 
+	z-index: -1;
+}
+.stretch {
+	width:100%;
+	height:100%;
+}
+#gallery {
+	height: 150px;
+	width: 1000px;
+}
+		</style>
+	</head>
+	<body>
+		<div id="gallery"></div>
+	</body>
+</html>
+'''))
+	f = open(path,'r')
+	lines = f.readlines()
+	for n,line in enumerate(lines):
+		letter, b64 = translate_line(line)
+		display(HTML(photo_html(n, b64, line[0])))
+		pass
+	f.close()
+	return
 
 #######################################################################################################################################
 ### THE APPLICATION ###
