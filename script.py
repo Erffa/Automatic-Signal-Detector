@@ -216,7 +216,7 @@ def photo_html(num, b64, letter):
 '''.format(num,b64,letter)
 
 def print_textfile(path):
-	  display(HTML('''
+	display(HTML('''
 <html>
 	<head>
 		<style>
@@ -246,7 +246,7 @@ def print_textfile(path):
 		<div id="gallery"></div>
 	</body>
 </html>
-'''))
+	'''))
 	f = open(path,'r')
 	lines = f.readlines()
 	for n,line in enumerate(lines):
