@@ -195,6 +195,60 @@ def update_tally(path):
 
 
 #######################################################################################################################################
+### METHODS TO DISPLAY THE TEXTFILE ###
+#######################################
+
+def translate_line(line):
+  arr = np.array([int(i) for i in line.split(',')[1:]]).reshape(16,16).astype(np.uint8)
+  b64 = ndarray_to_base64(arr)
+  b64 = "data:image/jpg;base64," + str(b64)[2:-1]
+  return line[0], b64
+  
+def photo_html(num, b64, letter):
+  return '''
+<div class="photo">
+  Line n°{}
+  <div class="background">
+    <img class="stretch" src="{}">
+  </div>
+  Letter : {}
+</div>
+'''.format(num,b64,letter)
+
+def print_textfile(path):
+  display(HTML('''
+  <html>
+    <head>
+      <style>
+  .photo {
+    position: relative;
+    float: left;
+    width: 100px;
+  }
+  .background {
+    width: 100px;
+    height: 100px; 
+    left: 0px; 
+    top: 0px; 
+    z-index: -1;
+  }
+  .stretch {
+      width:100%;
+      height:100%;
+  }
+  #gallery {
+    height: 150px;
+    width: 1000px;
+  }
+      </style>
+    </head>
+    <body>
+      <div id="gallery"></div>
+    </body>
+  </html>
+  '''))
+
+#######################################################################################################################################
 ### THE APPLICATION ###
 #######################
 
