@@ -1,3 +1,6 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
 myvar = "Hello in there"
 
 def myfunction(n):
