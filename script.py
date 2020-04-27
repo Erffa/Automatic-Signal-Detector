@@ -251,7 +251,7 @@ def print_textfile(path):
 	lines = f.readlines()
 	for n,line in enumerate(lines):
 		letter, b64 = translate_line(line)
-		display(HTML(photo_html(n, b64, line[0])))
+		display(HTML(photo_html(n+1, b64, line[0])))
 		pass
 	f.close()
 	return
