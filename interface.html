@@ -299,7 +299,8 @@ document.getElementById("webcam-but-start").onclick = function () { start(); }
 document.getElementById("webcam-but-stop").onclick = function () { stop(); }
 
 function webcam_is_on () { return stream !== null; }
-
+function dim () { return [video.videoWidth,video.videoHeight]; }
+	
 // SHOW AND CAPTURE A PICTURE
 var canvas =  document.createElement('canvas');
 var image = document.getElementById("image");
