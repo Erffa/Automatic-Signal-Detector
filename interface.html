@@ -7,10 +7,10 @@
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
 	<link href='https://fonts.googleapis.com/css?family=Stalemate' rel='stylesheet'>
 	<style>
+
 /* la page */
 body {
 	position: relative;
-	width: 960px;
 	height: 638px;
 	background-image:  url("https://cdn.pixabay.com/photo/2018/04/13/14/56/flower-3316681_960_720.jpg");
 	background-color: #cca0bb;
@@ -20,6 +20,7 @@ body {
 	padding: 8px;
 }
 
+/* général */
 .panel {
 	background-color: #ff989877;
 	outline: 5px solid #f9454577;
@@ -44,17 +45,33 @@ body {
 	background-color: #fbfd5c;
 }
 
-/* the left part */
-#left-area {
+
+.area {
+	position: relative;
 	float: left;
+	height: 600px;
+	margin: 20px;
+}
+
+/* the left part */
+#left-area, #left-area .panel {
+	width: 180px;
 }
 #left-area .panel {
-	margin: 20px;
-	width: 180px;
+	margin-bottom: 20px;
+}
+.but-handler {
+	padding: 0px 10px 10px 10px;
+}
+.but-handler .but {
+	float: left;
+	width: 70px;
+	height: 40px;
+	margin: 0px 5px 10px 5px;
 }
 
 /* - webcam-panel */
-/* -- video */
+/* -- video -- */
 #webcam-handler {
 	width: 180px;
 	height: 140px
@@ -66,55 +83,25 @@ body {
 	transform: scaleX(-1);
 	background-color: #cca0bbaa;
 }
-/* -- button */
-.but-handler {
-	padding: 0px 10px 10px 10px;
-}
-.but-handler .but {
-	float: left;
-	width: 70px;
-	height: 40px;
-	margin: 0px 5px 10px 5px;
+/* - camshift - */
+#camshift-panel .but-handler {
+	margin-top: 17px;
 }
 
-/* - data-panel */
-#data-panel table {
-	width: 164px;
-	table-layout: fixed;
-	text-align: center;
-	background-color: #ffffff77;
-	border-collapse: collapse;
-	border-spacing: 0;
-	border: 1px solid #ddd;
-	margin: 0;
+/* - hsv - */
+input {
+	text-align: right; 
+	width: 40px;x
 }
-#data-panel table tr {
-	height: 30px;
-}
-#data-panel table th {
-	font-size: 30px;
-	font-weight: normal;
-	border-bottom: 1px solid;
-    margin-bottom: -1px;
-}
-#data-panel table td {
-	font-style: bold;
-}
-/* - - tables - - */
-#table-handler {
-	height: 150px;
-	overflow-y: auto;
-}
-#tally td {
-	font-family: "Arial";
-	font-size: 14px;
-}
+
 
 /* img panel */
+#middle-area {
+	width: 680px;
+}
+
 #img-panel {
 	position: absolute;
-	left: 240px;
-	top: 28px;
 	padding: 20px;
 }
 #image {
@@ -146,27 +133,69 @@ body {
   display: block;
 }
 .close {
-	position: absolute;
-	top: 15px;
-	right: 35px;
-	color: #f1f1f1;
-	font-size: 40px;
-	font-weight: bold;
-	transition: 0.3s;
+  position: absolute;
+  top: 15px;
+  right: 35px;
+  color: #f1f1f1;
+  font-size: 40px;
+  font-weight: bold;
+  transition: 0.3s;
 }
 
 .close:hover,
 .close:focus {
-	color: #bbb;
-	text-decoration: none;
-	cursor: pointer;
+  color: #bbb;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* - data-panel */
+#right-area {
+	width: 180px;
+}
+#data-panel {
+	height: 584px;
+}
+#table-handler {
+	position: relative;
+	margin-top: 15px;
+	overflow-y: auto;
+	height: 520px;
+}
+#data-panel table {
+	width: 164px;
+	table-layout: fixed;
+	text-align: center;
+	background-color: #ffffff77;
+	border-collapse: collapse;
+	border-spacing: 0;
+	border: 1px solid #ddd;
+	margin: 0;
+}
+#data-panel table tr {
+	height: 30px;
+}
+#data-panel table th {
+	font-size: 30px;
+	font-weight: normal;
+	border-bottom: 1px solid;
+    margin-bottom: -1px;
+}
+#data-panel table td {
+	font-style: bold;
+}
+/* - - tables - - */
+
+#tally td {
+	font-family: "Arial";
+	font-size: 14px;
 }
 
 	</style>
 </head>
 <body>
 
-<div id="left-area">
+<div id="left-area" class="area">
 
 	<div id="webcam-panel" class="panel">
 		<div class="title">Webcam :</div>
@@ -187,6 +216,42 @@ body {
 		</div>
 	</div>
 
+	<div id="HSV-div" class="panel">
+		<div class="title">HSV</div>
+		<div id="HSV-table-handler">
+			<table id="HSV-table">
+				<tr><th></th><th>H</th><th>S</th><th>V</th></tr>
+				<tr id="HSV-from"><th>from</th>
+				<td><input></td><td><input></td><td><input></td></tr>
+				<tr id="HSV-to">  <th>to</th>
+				<td><input></td><td><input></td><td><input></td></tr>
+			</table>
+		</div>
+		<div id="HSV-but-handler" class="but-handler">
+			<button id="HSV-but-start" class="but">Start</button>
+			<button id="HSV-but-stop" class="but">Stop</button>
+		</div>
+	</div>
+
+</div>
+
+<div id="middle-area" class="area">
+	<div id="img-panel" class="panel">
+		<div class="title">
+			<button id="memo" class="but">Memo</button>
+			<div id="myModal" class="modal">
+				<span class="close">&times;</span>
+				<img class="modal-content" id="img01" 
+				src="https://i.pinimg.com/originals/fa/bb/70/fabb7087b0cffe30530e7df9ec1d0b88.png"
+				alt="hand sign"
+				width="317" height="450">
+			</div>
+		</div>
+		<img id="image"></img>
+	</div>
+</div>
+
+<div id="right-area" class="area">
 	<div id="data-panel" class="panel">
 		<div class="title">Images :</div>
 		<div id="table-handler">
@@ -203,22 +268,8 @@ for (const idx in alphabet) {
 			</table>
 		</div>
 	</div>
-
 </div>
 
-<div id="img-panel" class="panel">
-	<div class="title">
-		<button id="memo" class="but">Memo</button>
-		<div id="myModal" class="modal">
-			<span class="close">&times;</span>
-			<img class="modal-content" id="img01" 
-			src="https://i.pinimg.com/originals/fa/bb/70/fabb7087b0cffe30530e7df9ec1d0b88.png"
-			alt="hand sign"
-			width="317" height="450">
-		</div>
-	</div>
-	<img id="image"></img>
-</div>
 
 </body>
 <script>
@@ -255,9 +306,9 @@ var image = document.getElementById("image");
 
 function showimg (imgb64) { image.src = imgb64; }
 
-async function capture(){
-  return await new Promise( // wait for the promise to be completed
-  	function (resolve, reject) {
+async function capture () {
+	return await new Promise( // wait for the promise to be completed
+		function (resolve, reject) {
 			pendingResolve = resolve;
 			// set width and height to match the webcam
 			canvas.width = video.videoWidth; 
@@ -275,5 +326,34 @@ memo.onclick = function(){ modal.style.display = "block"; }
 // close when cross is pressed
 var span = document.querySelector("#myModal .close");
 span.onclick = function () { modal.style.display = "none"; }
+
+// CODE FOR HSV SETTER
+ids = ["h0","s0","v0","h1","s1","v1"]
+values = [0,0,0,255,255,255]
+inputs = document.querySelectorAll('#HSV-div input');
+
+for (i=0; i<6; i++) {
+  inputs[i].setAttribute('id', ids[i]);
+  inputs[i].setAttribute('type', 'number');
+  inputs[i].setAttribute('min', '0');
+  inputs[i].setAttribute('max', '255');
+  inputs[i].setAttribute('value', values[i]);
+}
+
+async function HSV_from() {
+  from_ = [
+    document.getElementById("h0").value,
+    document.getElementById("s0").value,
+    document.getElementById("v0").value ];
+  return await from_;
+}
+
+async function HSV_to() {
+  to = [
+    document.getElementById("h1").value,
+    document.getElementById("s1").value,
+    document.getElementById("v1").value];
+  return await to;
+} 
 </script>
 </html>
