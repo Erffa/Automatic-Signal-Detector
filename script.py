@@ -266,27 +266,34 @@ var code = false;
 document.addEventListener('keypress', logKey);  
 function logKey(e) { code = e.key.toUpperCase(); }
 function resetCode(e) {
-  let memo = code;
-  code = false;
-  return memo;
+	let memo = code;
+	code = false;
+	return memo;
 }
 // functions and vaiables to know when strat/stop camshift
 var camshift_is_on = false;
 document.getElementById('camshift-but-start').onclick = async function () {
-  if (camshift_is_on) { 
-    console.log("Camshift already running"); 
-  }
-  else {
-    camshift_is_on = true;
-    invoke = google.colab.kernel.invokeFunction;
-    result = await invoke("camshift", [], {});
-  }
+	if (camshift_is_on) { console.log("Camshift already running"); }
+	else {
+		camshift_is_on = true;
+		invoke = google.colab.kernel.invokeFunction;
+		result = await invoke("camshift", [], {});
+	}
 }
 document.getElementById('camshift-but-stop').onclick = function () { camshift_is_on = false; }
-// to know if the user want to stop the camshift
-
+// functions to start stop the HSV routine
+var hsv_is_on = false;
+document.getElementById("HSV-but-start").onclick = async function () {
+	if (hsv_is_on) { console.log("HSV is already running"); }
+	else {
+		hsv_is_on = true;
+		invoke = google.colab.kernel.invokeFunction;
+		result = await invoke("hsv", [], {});
+	}
+}
+document.getElementById("HSV-but-stop").onclick = function () { camshift_is_on = false; }
 // Return pic dimensions
-function dim () { return [video.videoWidth,video.videoHeight]; }
+
 ''')
 
 class App:
