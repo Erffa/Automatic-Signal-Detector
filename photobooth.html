@@ -108,6 +108,8 @@ input {
 	margin-top: 15px;
 	height: 480px;
 	width: 640px;
+	-webkit-transform: scaleX(-1);
+	transform: scaleX(-1);
 }
 /* - memo - */
 #myImg {
@@ -334,27 +336,27 @@ values = [0,0,0,255,255,255]
 inputs = document.querySelectorAll('#HSV-div input');
 
 for (i=0; i<6; i++) {
-  inputs[i].setAttribute('id', ids[i]);
-  inputs[i].setAttribute('type', 'number');
-  inputs[i].setAttribute('min', '0');
-  inputs[i].setAttribute('max', '255');
-  inputs[i].setAttribute('value', values[i]);
+	inputs[i].setAttribute('id', ids[i]);
+	inputs[i].setAttribute('type', 'number');
+	inputs[i].setAttribute('min', '0');
+	inputs[i].setAttribute('max', '255');
+	inputs[i].setAttribute('value', values[i]);
 }
 
 async function HSV_from() {
-  from_ = [
-    document.getElementById("h0").value,
-    document.getElementById("s0").value,
-    document.getElementById("v0").value ];
-  return await from_;
+	from_ = [
+		document.getElementById("h0").value,
+		document.getElementById("s0").value,
+		document.getElementById("v0").value ];
+	return await from_;
 }
 
 async function HSV_to() {
-  to = [
-    document.getElementById("h1").value,
-    document.getElementById("s1").value,
-    document.getElementById("v1").value];
-  return await to;
+	to = [
+		document.getElementById("h1").value,
+		document.getElementById("s1").value,
+		document.getElementById("v1").value];
+	return await to;
 } 
 </script>
 </html>
