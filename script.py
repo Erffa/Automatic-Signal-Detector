@@ -224,6 +224,9 @@ def update_tally(path):
 ### THE APPLICATION ###
 #######################
 
+####################################################################
+### THE APPLICATION ###
+#######################
 class App:
 
 	@staticmethod
@@ -233,7 +236,225 @@ class App:
 		return html
 
 
-class App_photobooth(App):
+class App_analyst(App):
+
+	HTML_URL = "https://raw.githubusercontent.com/Erffa/Automatic-Signal-Detector/master/analyst.html"
+
+	DEFAULT_INPUT_PATH = "/content/gdrive/My Drive/Colab Notebooks/storage/dataset.txt"
+
+	js = Javascript('''
+	// usefull constant
+	var alphabets = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
+	invoke = google.colab.kernel.invokeFunction;
+	var gallery = document.getElementById("gallery");
+	// SET THE PATH!
+	var path_btn = document.getElementById("path-btn");
+	var path_input = document.getElementById("path-input");
+	path_input.value = "/content/gdrive/My Drive/Colab Notebooks/storage/dataset.txt"
+	path_btn.onclick = async function () {
+		await invoke("setter", [], {"path":path_input.value} );
+	}
+	// DELETE IMAGES
+	document.getElementById("btn-yes").onclick = async function () {
+	  await invoke("delete_line", [], {"line":this.line});
+	  modal.style.display = "none";
+	}
+	var gallery = document.getElementById("gallery");
+	''')
+  
+	def __init__(self, path=None):
+		self.path = path
+		return
+
+	@staticmethod
+	def run(path=None):
+		'''
+		Create and launch an App object. Meant to be use as a solo statement in a cell
+		'''
+		app = App_analyst(path)
+		app.launch()
+		return
+
+	def launch(self):
+		'''
+		Launch the App object. 
+		Call to build to create the html and add some the
+		function registration 
+		'''
+		# set maximal height of the cell
+		display(Javascript('''google.colab.output.setIframeHeight(0, true, {maxHeight: 680});'''))
+		# register the functions needed
+		output.register_callback('setter', self.setter)
+		output.register_callback('delete_line', self.delete_line)
+		# create the interface in the cell
+		self.build()
+		return
+
+	def build(self):
+		'''
+		Create all the html and js needed
+		'''
+		# get the html
+		html = __class__.get_github_html(__class__.HTML_URL)
+		# display the html and load the js
+		display(html)
+		display(__class__.js)
+		# refresh the images
+		self.refresh_gallery()
+		return
+
+
+	def refresh_gallery(self, **kwars):
+		'''
+		Recreate the gallery element with all the images from the dataset
+		'''
+		# if path is None, nothing to do
+		if self.path == None:
+			return
+
+		# empty the current image displayer
+		display(Javascript('''gallery.innerHTML = ""; '''))
+
+		# extract the data from the textfile
+		letters, arr = load_dataset(self.path)
+		all_letters = np.unique(letters).astype(np.uint8)
+
+		# create a row for each letter represented in the textfile 
+		for letter in all_letters:
+			__class__.HTML_add_row(letter)
+			pass
+
+		# add every image to the corresponding row
+		for i in range(len(letters)):
+			letter = int(letters[i])
+			url = "data:image/jpg;base64," + str( ndarray_to_base64( arr[i].reshape((16,16)).astype(np.uint8) ) )[2:-1]
+			__class__.HTML_add_image(i, letter, url)
+			pass
+
+		return
+
+	@staticmethod
+	def HTML_add_row(letter):
+		'''
+		Create the rows where the images of the same letter are displayed
+		'''
+		display(Javascript('''
+			let row = document.createElement("div");
+			let title = document.createElement("div");
+			let handler = document.createElement("div");
+			row.id = "row-{l}";
+			row.className = "row";
+			title.id = "row-title-{l}";
+			title.className = "title";
+			title.innerHTML = alphabets[{l}];
+			handler.id = "letter-handler-{l}";
+			handler.className = "letter-handler";
+			row.appendChild(title);
+			row.appendChild(handler);
+			gallery.appendChild(row);
+			'''.format(l=letter)))
+		return
+  
+	@staticmethod
+	def HTML_add_image(index, letter, url):
+		'''
+		Add an image to the corresponding row.
+		The rows must be already created to have no errors.
+		'''
+		display(Javascript('''
+			let handler = document.getElementById("letter-handler-{l}");
+			let panel = document.createElement("div");
+			let image = document.createElement("img");
+			panel.id = "panel-{l}";
+			panel.className = "background";
+			image.id = "image-{i}";
+			image.className = "stretch";
+			image.src = "{u}";
+			image.onclick = function () {bl}
+			num = parseInt(this.id.split("-")[1]);
+			modal.style.display = "block";
+			document.getElementById("confirm-modal-image").src = this.src;
+			document.getElementById("btn-yes").line = num;
+			{br}
+			panel.appendChild(image);
+			handler.appendChild(panel);
+			'''.format(i=index, l=letter, u=url, bl="{", br="}")))
+		return
+
+	def setter(self, **kwargs):
+		if "path" in kwargs.keys():
+			self.path = kwargs["path"]
+			self.refresh_gallery()
+			pass
+		return
+
+	def delete_line(self, **kwargs):
+		if "line" in kwargs.keys():
+			# get the index of the line to delete
+			line = kwargs["line"]
+			# get all the lines
+			f = open(self.path, 'r')
+			lines = f.readlines()
+			f.close()
+			# rewrite the file
+			f = open(self.path, 'w')
+			for i in range(len(lines)):
+				if i != line:
+					f.write(lines[i])
+					pass
+				pass
+			f.close()
+			# refresh the display
+			self.refresh_gallery()
+			pass
+		return
+
+
+##########################################################################################################################################
+class App_hsv(App):
+
+	def hsv (self):
+
+		webcam_is_on = eval_js("webcam_is_on()")
+		hsv_is_on = eval_js("hsv_is_on")
+
+		while webcam_is_on and hsv_is_on:
+
+			self.frame = self.getimg()
+			founded, rect = self.facedetect(self.frame, self.full_box)
+
+			if founded:
+				hsv_from = np.array([int(i) for i in eval_js("HSV_from()")]).astype(np.float32)
+				hsv_to   = np.array([int(i) for i in eval_js("HSV_to()")  ]).astype(np.float32)
+
+				self.rect_box = rect_to_box(rect)
+				self.hist_box = expend(self.rect_box, (-30,-30), self.w,self.h)
+		
+				self.hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
+				self.mask = cv2.inRange(self.hsv, hsv_from, hsv_to)
+				hsv_ = cutter(self.hsv, self.hist_box)
+				mask_ = cv2.inRange(hsv_, hsv_from, hsv_to)
+		
+				self.hist = cv2.calcHist([hsv_],[0],mask_,[180],[0,180])
+				cv2.normalize(self.hist,self.hist,0,255,cv2.NORM_MINMAX)
+
+				self.prob = cv2.calcBackProject([self.hsv], [0], self.hist, [0, 180], 1)
+				self.prob &= self.mask
+
+				self.setimg(self.prob)
+
+			else:
+				self.setimg(self.frame)
+
+			# new loop ?
+			webcam_is_on = eval_js("webcam_is_on()")
+			hsv_is_on = eval_js("hsv_is_on")
+			pass
+		return
+
+#######################################################################################################################################
+
+class App_photobooth(App_hsv):
 	'''
 	The functions of this class need to be called in a certain context, 
 	were the appropriate html and js code has been loaded.
@@ -248,38 +469,38 @@ class App_photobooth(App):
 	LETTERS = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
   
 	js = Javascript('''
-// save / reset last pressed key
-var code = false;
-document.addEventListener('keypress', logKey);  
-function logKey(e) { code = e.key.toUpperCase(); }
-function resetCode(e) {
-	let memo = code;
-	code = false;
-	return memo;
-}
-// functions and vaiables to know when strat/stop camshift
-var camshift_is_on = false;
-document.getElementById('camshift-but-start').onclick = async function () {
-	if (camshift_is_on) { console.log("Camshift already running"); }
-	else {
-		camshift_is_on = true;
-		invoke = google.colab.kernel.invokeFunction;
-		result = await invoke("camshift", [], {});
+	// save / reset last pressed key
+	var code = false;
+	document.addEventListener('keypress', logKey);  
+	function logKey(e) { code = e.key.toUpperCase(); }
+	function resetCode(e) {
+		let memo = code;
+		code = false;
+		return memo;
 	}
-}
-document.getElementById('camshift-but-stop').onclick = function () { camshift_is_on = false; }
-// functions to start stop the HSV routine
-var hsv_is_on = false;
-document.getElementById("HSV-but-start").onclick = async function () {
-	if (hsv_is_on) { console.log("HSV is already running"); }
-	else {
-		hsv_is_on = true;
-		invoke = google.colab.kernel.invokeFunction;
-		result = await invoke("hsv", [], {});
+	// functions and vaiables to know when strat/stop camshift
+	var camshift_is_on = false;
+	document.getElementById('camshift-but-start').onclick = async function () {
+		if (camshift_is_on) { console.log("Camshift already running"); }
+		else {
+			camshift_is_on = true;
+			invoke = google.colab.kernel.invokeFunction;
+			result = await invoke("camshift", [], {});
+		}
 	}
-}
-document.getElementById("HSV-but-stop").onclick = function () { hsv_is_on = false; }
-// Return pic dimensions
+	document.getElementById('camshift-but-stop').onclick = function () { camshift_is_on = false; }
+	// functions to start stop the HSV routine
+	var hsv_is_on = false;
+	document.getElementById("HSV-but-start").onclick = async function () {
+		if (hsv_is_on) { console.log("HSV is already running"); }
+		else {
+			hsv_is_on = true;
+			invoke = google.colab.kernel.invokeFunction;
+			result = await invoke("hsv", [], {});
+		}
+	}
+	document.getElementById("HSV-but-stop").onclick = function () { hsv_is_on = false; }
+	// Return pic dimensions
 
 ''')
 	
@@ -541,8 +762,143 @@ document.getElementById("HSV-but-stop").onclick = function () { hsv_is_on = fals
 		update_tally(self.textfile)
 
 		return
-	def hsv (self):
+	
 
+#######################################################################################################################################
+	
+
+
+
+#######################################################################################################################################################
+
+class App_recognition(App_hsv):
+
+	HTML_URL  = "https://raw.githubusercontent.com/Erffa/Automatic-Signal-Detector/master/photobooth.html"
+	URL_FACE_CC = cv2.data.haarcascades + "haarcascade_frontalface_alt.xml"
+	FACE_CC = cv2.CascadeClassifier(cv2.samples.findFile(URL_FACE_CC))
+	# CAMSHIFT
+	TERM_CRIT = ( cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1 )
+	# SAVE IMAGES
+	LETTERS = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
+
+	js = Javascript('''
+// remove the right side
+var right_area = document.getElementById("right-area");
+right_area.parentNode.removeChild(right_area);
+// functions and vaiables to know when strat/stop camshift
+document.querySelector('#camshift-panel .title').innerHTML = "Recognition"
+var recognition_is_on = false;
+document.getElementById('camshift-but-start').onclick = async function () {
+	if (recognition_is_on) { console.log("recognition already running"); }
+	else {
+		recognition_is_on = true;
+		invoke = google.colab.kernel.invokeFunction;
+		result = await invoke("recognition", [], {});
+	}
+}
+document.getElementById('camshift-but-stop').onclick = function () { recognition_is_on = false; }
+// functions to start stop the HSV routine
+var hsv_is_on = false;
+document.getElementById("HSV-but-start").onclick = async function () {
+	if (hsv_is_on) { console.log("HSV is already running"); }
+	else {
+		hsv_is_on = true;
+		invoke = google.colab.kernel.invokeFunction;
+		result = await invoke("hsv", [], {});
+	}
+}
+document.getElementById("HSV-but-stop").onclick = function () { hsv_is_on = false; }
+''')
+
+	def __init__(self, model): # json, weights):
+		#self.json = json
+		#self.weights = weights
+		#self.model = Trainer.read_model(json, weights)
+		self.model = model
+		self.w = 640
+		self.h = 480
+		self.full_box = np.array([0,0,640,480]) #self.w,self.h])
+		return
+
+	@staticmethod
+	def run(json, weights):
+		app = App_recognition(json, weightsd)
+		app.launch()
+		return
+
+	def launch(self):
+		# set the height of the cell
+		display(Javascript('''google.colab.output.setIframeHeight(0, true, {maxHeight: 680});'''))
+		# register the function
+		output.register_callback('recognition', self.recognition)
+		output.register_callback('hsv', self.hsv)
+		# get the html
+		html = __class__.get_github_html(__class__.HTML_URL)
+		# upload the html
+		display(html)
+		display(__class__.js)
+		# launch the webcam
+		eval_js('start()')
+		return
+
+	def getimg(self):
+		capt = eval_js('capture()')
+		return  base64_to_ndarray( capt )
+
+	def setimg(self, img):
+		imgb64 = ndarray_to_base64(img)
+		imgb64 = "data:image/jpg;base64," + str(imgb64)[2:-1]
+		eval_js('showimg("{}")'.format(imgb64))
+		return
+
+	def facedetect(self, img, box):
+		# selection
+		img_ = cutter(img, box)
+		# filter the input
+		gray = cv2.cvtColor(img_, cv2.COLOR_RGB2GRAY)
+		gray = cv2.equalizeHist(gray)
+		# do the recognition with ada boost
+		rects = __class__.FACE_CC.detectMultiScale(
+			gray, scaleFactor=1.3, minNeighbors=4,
+			minSize=(30, 30), flags=cv2.CASCADE_SCALE_IMAGE)
+		# check if anything was found
+		founded = len(rects)!=0
+		# find best rectangle and box
+		rect = self.choose_rect(rects)
+		return founded, rect
+
+	def choose_rect(self, rects):
+		l=len(rects)
+		if rects==():
+			return None
+		elif l==1:
+			return rects[0,:]
+		else:
+			best_rect=rects[0,:]
+			best_area=best_rect[2]*best_rect[3]
+			for i in range(1,l):
+				rect=rects[i,:]
+				area=rect[2]*rect[3]
+				if area>best_area:
+					best_rect=rect
+					best_area=area
+					pass
+				pass
+			pass
+			return best_rect
+
+	def compute_hist(self, img, box):
+		hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+		hsv_ = cutter(hsv, box)
+		mask_ = cv2.inRange(hsv_, self.color1, self.color2)
+		hist = cv2.calcHist([hsv_],[0],mask_,[180],[0,180])
+		cv2.normalize(hist,hist,0,255,cv2.NORM_MINMAX)
+		return hist
+
+	def quality(self, prob, box):
+		return np.mean(cutter(prob, box))
+
+	def hsv (self):
 		webcam_is_on = eval_js("webcam_is_on()")
 		hsv_is_on = eval_js("hsv_is_on")
 		while webcam_is_on and hsv_is_on:
@@ -556,12 +912,12 @@ document.getElementById("HSV-but-stop").onclick = function () { hsv_is_on = fals
 
 				self.rect_box = rect_to_box(rect)
 				self.hist_box = expend(self.rect_box, (-30,-30), self.w,self.h)
-		
+
 				self.hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
 				self.mask = cv2.inRange(self.hsv, hsv_from, hsv_to)
 				hsv_ = cutter(self.hsv, self.hist_box)
 				mask_ = cv2.inRange(hsv_, hsv_from, hsv_to)
-		
+
 				self.hist = cv2.calcHist([hsv_],[0],mask_,[180],[0,180])
 				cv2.normalize(self.hist,self.hist,0,255,cv2.NORM_MINMAX)
 
@@ -579,185 +935,132 @@ document.getElementById("HSV-but-stop").onclick = function () { hsv_is_on = fals
 			pass
 		return
 
-#######################################################################################################################################
-### THE ANALYST APP ###
-#######################
+	def recognition(self):
+		# just remeber the current config for hsv mask
+		self.color1 = np.array([int(i) for i in eval_js("HSV_from()")]).astype(np.float32)
+		self.color2 = np.array([int(i) for i in eval_js("HSV_to()")  ]).astype(np.float32)
+		
+		###################
+		# DETECT THE FACE #
+		##############################################
+		founded = False
+		rect = None
+		while not founded and eval_js('webcam_is_on()'):
+			self.frame = self.getimg()
+	 		# show the webcam on the big screen
+			self.vis = self.frame.copy()
+			founded, rect = self.facedetect(self.frame, self.full_box)
+			self.setimg(self.vis)
+			pass
+
+		#########################
+		# COMPUTE THE HISTOGRAM #
+		#############################################
+		## 1. First hist of head
+		# remember the face location
+		self.rect_box = rect_to_box(rect)
+		self.facearea = expend(self.rect_box, (-30,-30,30,50), self.w,self.h)
+		# compute the histogram
+		self.hist_box = expend(self.rect_box, (-30,-30), self.w,self.h) # take a smaller area inside the facedetection area (no hair nor background)
+		self.hist = self.compute_hist(self.frame, self.hist_box)
+		# show boxes
+		self.vis = draw_box(self.vis, self.hist_box, (255,0,0))
+		self.vis = draw_box(self.vis, self.rect_box, (0,255,0))
+		self.vis = draw_box(self.vis, self.facearea, (0,0,255))
+		self.setimg(self.vis)
+
+		## 2. Then search for hand
+		qualy = 0
+		while qualy<20:
+			self.frame = self.getimg()
+			# transform the image
+			self.hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
+			self.mask = cv2.inRange(self.hsv, self.color1, self.color2)
+			#
+			self.prob = cv2.calcBackProject([self.hsv], [0], self.hist, [0, 180], 1)
+			self.prob &= self.mask
+			#
+			x0,y0, x1,y1 = self.facearea
+			self.prob[y0:y1,x0:x1] = 0
+
+			self.ret, self.track_window = cv2.CamShift(self.prob, self.full_box, __class__.TERM_CRIT)
+			self.track_box = rect_to_box(self.track_window)
+
+			self.vis = self.prob.copy()
+			draw_box(self.vis, self.track_box, (255))
+			self.setimg(self.vis)
+	 
+			qualy = self.quality(self.prob, self.track_box)
+			pass
+		
+		sel = cutter(self.prob, self.track_box)
+		hsv_ = cutter(self.hsv, self.track_box)
+		only = hsv_[sel>50,:]
+		only = only.reshape(-1,1,3)
+		mask_ = cv2.inRange(only, self.color1, self.color2)
+		hist2 = cv2.calcHist([only],[0],mask_,[180],[0,180])
+		cv2.normalize(hist2,hist2,0,255,cv2.NORM_MINMAX)
+		hist3 = (self.hist+hist2)/2.
+		cv2.normalize(hist3,hist3,0,255,cv2.NORM_MINMAX)
 	
+		self.hist = hist3
 
+		#################
+		# CAMSHIFT LOOP #
+		#############################################
+		self.search_area = self.full_box
+		ison = eval_js('webcam_is_on()') and eval_js('recognition_is_on')
+		while (ison):
+			# get the image
+			self.frame = self.getimg()
+			self.vis = np.copy(self.frame)
+			# transform the image
+			self.hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
+			self.mask = cv2.inRange(self.hsv, self.color1, self.color2)
+			#
+			self.prob = cv2.calcBackProject([self.hsv], [0], self.hist, [0, 180], 1)
+			self.prob &= self.mask
+			#
+			x0,y0, x1,y1 = self.facearea
+			self.prob[y0:y1,x0:x1] = 0
 
-def load_dataset(dataset_file_path):
-    a = np.loadtxt(dataset_file_path, delimiter=',', converters={ 0 : lambda ch : ord(ch)-ord('A') })
-    return a[:,0], a[:,1:]
+			self.ret, self.track_window = cv2.CamShift(self.prob, self.search_area, __class__.TERM_CRIT)
+			self.track_box = rect_to_box(self.track_window)
+			self.search_area = expend(self.track_box, (60,60), self.w,self.h)
 
-class App_analyst(App):
-
-	HTML_URL = "https://raw.githubusercontent.com/Erffa/Automatic-Signal-Detector/master/analyst.html"
-
-	DEFAULT_INPUT_PATH = "/content/gdrive/My Drive/Colab Notebooks/storage/dataset2.txt"
-
-	js = Javascript('''
-// usefull constant
-var alphabets = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
-invoke = google.colab.kernel.invokeFunction;
-var gallery = document.getElementById("gallery");
-// SET THE PATH!
-var path_btn = document.getElementById("path-btn");
-var path_input = document.getElementById("path-input");
-path_input.value = "/content/gdrive/My Drive/Colab Notebooks/storage/dataset2.txt"
-path_btn.onclick = async function () {
-	await invoke("setter", [], {"path":path_input.value} );
-}
-// DELETE IMAGES
-document.getElementById("btn-yes").onclick = async function () {
-  await invoke("delete_line", [], {"line":this.line});
-  modal.style.display = "none";
-}
-var gallery = document.getElementById("gallery");
-''')
-  
-	def __init__(self, path=None):
-		self.path = path
-		return
-
-	@staticmethod
-	def run(path=None):
-		'''
-		Create and launch an App object. Meant to be use as a solo statement in a cell
-		'''
-		app = App_analyst(path)
-		app.launch()
-		return
-
-	def launch(self):
-		'''
-		Launch the App object. 
-		Call to build to create the html and add some the
-		function registration 
-		'''
-		# set maximal height of the cell
-		display(Javascript('''google.colab.output.setIframeHeight(0, true, {maxHeight: 680});'''))
-		# register the functions needed
-		output.register_callback('setter', self.setter)
-		output.register_callback('delete_line', self.delete_line)
-		# create the interface in the cell
-		self.build()
-		return
-
-	def build(self):
-		'''
-		Create all the html and js needed
-		'''
-		# get the html
-		html = __class__.get_github_html(__class__.HTML_URL)
-		# display the html and load the js
-		display(html)
-		display(__class__.js)
-		# refresh the images
-		self.refresh_gallery()
-		return
-
-
-	def refresh_gallery(self, **kwars):
-		'''
-		Recreate the gallery element with all the images from the dataset
-		'''
-		# if path is None, nothing to do
-		if self.path == None:
-			return
-
-		# empty the current image displayer
-		display(Javascript('''gallery.innerHTML = ""; '''))
-
-		# extract the data from the textfile
-		letters, arr = load_dataset(self.path)
-		all_letters = np.unique(letters).astype(np.uint8)
-
-		# create a row for each letter represented in the textfile 
-		for letter in all_letters:
-			__class__.HTML_add_row(letter)
-			pass
-
-		# add every image to the corresponding row
-		for i in range(len(letters)):
-			letter = int(letters[i])
-			url = "data:image/jpg;base64," + str( ndarray_to_base64( arr[i].reshape((16,16)).astype(np.uint8) ) )[2:-1]
-			__class__.HTML_add_image(i, letter, url)
-			pass
-
-		return
-
-	@staticmethod
-	def HTML_add_row(letter):
-		'''
-		Create the rows where the images of the same letter are displayed
-		'''
-		display(Javascript('''
-			let row = document.createElement("div");
-			let title = document.createElement("div");
-			let handler = document.createElement("div");
-			row.id = "row-{l}";
-			row.className = "row";
-			title.id = "row-title-{l}";
-			title.className = "title";
-			title.innerHTML = alphabets[{l}];
-			handler.id = "letter-handler-{l}";
-			handler.className = "letter-handler";
-			row.appendChild(title);
-			row.appendChild(handler);
-			gallery.appendChild(row);
-			'''.format(l=letter)))
-		return
-  
-	@staticmethod
-	def HTML_add_image(index, letter, url):
-		'''
-		Add an image to the corresponding row.
-		The rows must be already created to have no errors.
-		'''
-		display(Javascript('''
-			let handler = document.getElementById("letter-handler-{l}");
-			let panel = document.createElement("div");
-			let image = document.createElement("img");
-			panel.id = "panel-{l}";
-			panel.className = "background";
-			image.id = "image-{i}";
-			image.className = "stretch";
-			image.src = "{u}";
-			image.onclick = function () {bl}
-			num = parseInt(this.id.split("-")[1]);
-			modal.style.display = "block";
-			document.getElementById("confirm-modal-image").src = this.src;
-			document.getElementById("btn-yes").line = num;
-			{br}
-			panel.appendChild(image);
-			handler.appendChild(panel);
-			'''.format(i=index, l=letter, u=url, bl="{", br="}")))
-		return
-
-	def setter(self, **kwargs):
-		if "path" in kwargs.keys():
-			self.path = kwargs["path"]
-			self.refresh_gallery()
-			pass
-		return
-
-	def delete_line(self, **kwargs):
-		if "line" in kwargs.keys():
-			# get the index of the line to delete
-			line = kwargs["line"]
-			# get all the lines
-			f = open(self.path, 'r')
-			lines = f.readlines()
-			f.close()
-			# rewrite the file
-			f = open(self.path, 'w')
-			for i in range(len(lines)):
-				if i != line:
-					f.write(lines[i])
-					pass
+      # affichage
+			self.vis = self.prob.copy()
+			self.vis = draw_box(self.vis, self.search_area, (200))
+   
+			# if not goo enough, search everywhere
+			quality = self.quality(self.prob, self.track_box)
+			#print("{}".format(quality))
+			if quality<20:
+				self.search_area = self.full_box
 				pass
-			f.close()
-			# refresh the display
-			self.refresh_gallery()
+			else:
+				self.square_box = centered_square_box(self.search_area, self.w, self.h)
+				img = cutter(self.prob, self.square_box) 
+				self.img16 = cv2.resize(img,(16,16))
+				prediction = self.model.predict(self.img16.reshape(1,256).astype(np.float32)/255.)
+				prediction_max = prediction.argmax()
+				predicted_letter = chr(ord('A') + prediction_max)
+
+				cv2.putText(
+					self.vis,
+					predicted_letter,
+					(self.facearea[0], self.facearea[1]),
+					cv2.FONT_HERSHEY_SIMPLEX,
+					1,
+					(230),
+					2)
+				pass
+
+			# affichage
+			self.vis = draw_box(self.vis, self.search_area, (200))
+			self.setimg(self.vis)
+
+			# Test if we go on
+			ison = eval_js('webcam_is_on()') and eval_js('recognition_is_on')
 			pass
 		return
