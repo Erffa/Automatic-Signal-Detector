@@ -16,7 +16,8 @@ from google.colab import drive
 import os
 # - to shuffle lines
 import random
-
+# - 
+import requests
 
 #######################################################################################################################################
 ### METHODS TO MANIPULATE PICTURES ###
@@ -86,7 +87,32 @@ def expend(box, margin, w,h):
 	new_box[2:] = np.minimum(new_box[2:],[w,h])
 	return new_box
 
-def centered_square_box(box):
+def centered_square_box(box, w, h):
+	'''
+	Get the smallest square box containng a rectangular box.
+	'''
+	box = np.array(box).reshape(-1)
+	center = (box[2:]+box[:2])/2
+	size = np.max(box[2:]-box[:2])/2
+	xmin = center[0]-size
+	xmax = center[0]+size
+	ymin = center[1]-size
+	ymax = center[1]+size
+	sqr_box = np.array([xmin,ymin,xmax,ymax])
+	dx,dy = 0.,0.
+	if xmin<0:
+		dx = -xmin
+	if xmax>w:
+		dx = w-xmax
+	if ymin<0:
+		dy = -ymin
+	if ymax>w:
+		dy = h-ymax
+	sqr_box += np.array([dx,dy,dx,dy])	
+	#print(sqr_box)
+	return sqr_box.astype(np.uint32)
+
+def centered_square_box2(box):
 	'''
 	Get the biggest square box contained and centered into a rectangular box.
 	'''
@@ -98,7 +124,7 @@ def centered_square_box(box):
 	ymin = center[1]-size
 	ymax = center[1]+size
 	return np.array([xmin,ymin,xmax,ymax]).astype(np.uint32)
-
+ 
 def cutter(img, box, copy=False):
 	'''
 	Get a part of an image. We can decide either we want a copy of it or the real thing.
@@ -195,90 +221,29 @@ def update_tally(path):
 
 
 #######################################################################################################################################
-### METHODS TO DISPLAY THE TEXTFILE ###
-#######################################
+### THE APPLICATION ###
+#######################
 
-def translate_line(line):
-  arr = np.array([int(i) for i in line.split(',')[1:]]).reshape(16,16).astype(np.uint8)
-  b64 = ndarray_to_base64(arr)
-  b64 = "data:image/jpg;base64," + str(b64)[2:-1]
-  return line[0], b64
-  
-def photo_html(num, b64, letter):
-  return '''
-<div class="photo">
-  Line n°{}
-  <div class="background">
-    <img class="stretch" src="{}">
-  </div>
-  Letter : {}
-</div>
-'''.format(num,b64,letter)
+class App:
 
-def print_textfile(path):
-	display(HTML('''
-<html>
-	<head>
-		<style>
-.photo {
-	position: relative;
-	float: left;
-	width: 100px;
-}
-.background {
-	width: 100px;
-	height: 100px; 
-	left: 0px; 
-	top: 0px; 
-	z-index: -1;
-}
-.stretch {
-	width:100%;
-	height:100%;
-}
-#gallery {
-	height: 150px;
-	width: 1000px;
-}
-		</style>
-	</head>
-	<body>
-		<div id="gallery"></div>
-	</body>
-</html>
-	'''))
-	f = open(path,'r')
-	lines = f.readlines()
-	for n,line in enumerate(lines):
-		letter, b64 = translate_line(line)
-		display(HTML(photo_html(n+1, b64, line[0])))
-		pass
-	f.close()
-	return
-
-#######################################################################################################################################
-### THE APPS ###
-################
+	@staticmethod
+	def get_github_html(url):
+		request_html = requests.get(url, allow_redirects=True)
+		html = HTML(request_html.content.decode("utf-8"))
+		return html
 
 
-#######################################################################################################################################
-### THE PHOTO BOOTH APP ###
-###########################
-
-class App_photobooth:
+class App_photobooth(App):
 	'''
 	The functions of this class need to be called in a certain context, 
 	were the appropriate html and js code has been loaded.
 	'''
-	# HTML location on github
 	HTML_URL = "https://raw.githubusercontent.com/Erffa/Automatic-Signal-Detector/master/photobooth.html"
 	# FACEDETECT the path to the classifier end the classifier
 	URL_FACE_CC = cv2.data.haarcascades + "haarcascade_frontalface_alt.xml"
 	FACE_CC = cv2.CascadeClassifier(cv2.samples.findFile(URL_FACE_CC))
 	# CAMSHIFT
 	TERM_CRIT = ( cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1 )
-	COLOR1 = np.array((0., 60., 32.)) # np.array((25., 76., 102.))
-	COLOR2 = np.array((180., 255., 255.)) # np.array((125., 130., 204.))
 	# SAVE IMAGES
 	LETTERS = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
   
@@ -313,13 +278,14 @@ document.getElementById("HSV-but-start").onclick = async function () {
 		result = await invoke("hsv", [], {});
 	}
 }
-document.getElementById("HSV-but-stop").onclick = function () { camshift_is_on = false; }
+document.getElementById("HSV-but-stop").onclick = function () { hsv_is_on = false; }
 // Return pic dimensions
 
 ''')
-	def __init__(self, savedir, textfile):
+	
+	def __init__(self, imagedir, textfile):
 		#
-		self.savedir = savedir
+		self.imagedir = imagedir
 		self.textfile = textfile
 		#
 		self.full_box = np.array([0,0,640,480]) #self.w,self.h])
@@ -329,12 +295,20 @@ document.getElementById("HSV-but-stop").onclick = function () { camshift_is_on =
 		# 
 		self.frame = None # the RGB webcam image
 		# camshift variables
+		self.color1 = None #COLOR1 = np.array((0., 60., 32.)) # np.array((25., 76., 102.))
+		self.color2 = None #COLOR2 = np.array((180., 255., 255.)) # np.array((125., 130., 204.))
 		self.facearea = None
 		self.prob_box = None
 		self.prob = None # probability field ; 
 		self.ret = None
 		return
 		#
+
+	@staticmethod
+	def run(savedir, textfile):
+		app = App_photobooth(savedir, textfile)
+		app.launch()
+		return
 
 	def launch(self):
 		# ignore the warnings to do not change the output
@@ -343,17 +317,16 @@ document.getElementById("HSV-but-stop").onclick = function () { camshift_is_on =
 		display(Javascript('''google.colab.output.setIframeHeight(0, true, {maxHeight: 680});'''))
 		# register the function
 		output.register_callback('camshift', self.camshift)
-		# get the html ; a request to get the content of the url
-		request_html = requests.get(App_photobooth.HTML_URL, allow_redirects=True)
-		# decode and exec the code
-		html = HTML(request_html.content.decode("utf-8"))
+		output.register_callback('hsv', self.hsv)
+		# get the html
+		html = __class__.get_github_html(__class__.HTML_URL)
 		# upload the html
 		display(html)
-		display(App_photobooth.js)
+		display(__class__.js)
 		# launch the webcam
 		eval_js('start()')
 		# update the tally
-		update_tally(savedir+textfile)
+		update_tally(self.textfile)
 		return
 		
 	def getimg(self):
@@ -373,7 +346,7 @@ document.getElementById("HSV-but-stop").onclick = function () { camshift_is_on =
 		gray = cv2.cvtColor(img_, cv2.COLOR_RGB2GRAY)
 		gray = cv2.equalizeHist(gray)
 		# do the recognition with ada boost
-		rects = App_photobooth.FACE_CC.detectMultiScale(
+		rects = __class__.FACE_CC.detectMultiScale(
 			gray, scaleFactor=1.3, minNeighbors=4,
 			minSize=(30, 30), flags=cv2.CASCADE_SCALE_IMAGE)
 		# check if anything was found
@@ -410,7 +383,14 @@ document.getElementById("HSV-but-stop").onclick = function () { camshift_is_on =
 		cv2.normalize(hist,hist,0,255,cv2.NORM_MINMAX)
 		return hist
 
+	def quality(self, prob, box):
+		return np.mean(cutter(prob, box))
+	
 	def camshift(self):
+		# just remeber the current config for hsv mask
+		self.color1 = np.array([int(i) for i in eval_js("HSV_from()")]).astype(np.float32)
+		self.color2 = np.array([int(i) for i in eval_js("HSV_to()")  ]).astype(np.float32)
+		
 		###################
 		# DETECT THE FACE #
 		##############################################
@@ -418,15 +398,16 @@ document.getElementById("HSV-but-stop").onclick = function () { camshift_is_on =
 		rect = None
 		while not founded and eval_js('webcam_is_on()'):
 			self.frame = self.getimg()
+	 		# show the webcam on the big screen
 			self.vis = self.frame.copy()
 			founded, rect = self.facedetect(self.frame, self.full_box)
-			# show the webcam on the bigscreen
 			self.setimg(self.vis)
 			pass
 
 		#########################
 		# COMPUTE THE HISTOGRAM #
 		#############################################
+		## 1. First hist of head
 		# remember the face location
 		self.rect_box = rect_to_box(rect)
 		self.facearea = expend(self.rect_box, (-30,-30,30,50), self.w,self.h)
@@ -439,6 +420,42 @@ document.getElementById("HSV-but-stop").onclick = function () { camshift_is_on =
 		self.vis = draw_box(self.vis, self.facearea, (0,0,255))
 		self.setimg(self.vis)
 
+		## 2. Then search for hand
+		qualy = 0
+		while qualy<20:
+			self.frame = self.getimg()
+			# transform the image
+			self.hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
+			self.mask = cv2.inRange(self.hsv, self.color1, self.color2)
+			#
+			self.prob = cv2.calcBackProject([self.hsv], [0], self.hist, [0, 180], 1)
+			self.prob &= self.mask
+			#
+			x0,y0, x1,y1 = self.facearea
+			self.prob[y0:y1,x0:x1] = 0
+
+			self.ret, self.track_window = cv2.CamShift(self.prob, self.full_box, __class__.TERM_CRIT)
+			self.track_box = rect_to_box(self.track_window)
+
+			self.vis = self.prob.copy()
+			draw_box(self.vis, self.track_box, (255))
+			self.setimg(self.vis)
+	 
+			qualy = self.quality(self.prob, self.track_box)
+			pass
+		
+		sel = cutter(self.prob, self.track_box)
+		hsv_ = cutter(self.hsv, self.track_box)
+		only = hsv_[sel>50,:]
+		only = only.reshape(-1,1,3)
+		mask_ = cv2.inRange(only, self.color1, self.color2)
+		hist2 = cv2.calcHist([only],[0],mask_,[180],[0,180])
+		cv2.normalize(hist2,hist2,0,255,cv2.NORM_MINMAX)
+		hist3 = (self.hist+hist2)/2.
+		cv2.normalize(hist3,hist3,0,255,cv2.NORM_MINMAX)
+	
+		self.hist = hist3
+
 		#################
 		# CAMSHIFT LOOP #
 		#############################################
@@ -450,7 +467,7 @@ document.getElementById("HSV-but-stop").onclick = function () { camshift_is_on =
 			self.vis = np.copy(self.frame)
 			# transform the image
 			self.hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
-			self.mask = cv2.inRange(self.hsv, App.COLOR1, App.COLOR2)
+			self.mask = cv2.inRange(self.hsv, self.color1, self.color2)
 			#
 			self.prob = cv2.calcBackProject([self.hsv], [0], self.hist, [0, 180], 1)
 			self.prob &= self.mask
@@ -458,12 +475,12 @@ document.getElementById("HSV-but-stop").onclick = function () { camshift_is_on =
 			x0,y0, x1,y1 = self.facearea
 			self.prob[y0:y1,x0:x1] = 0
 
-			self.ret, self.track_window = cv2.CamShift(self.prob, self.search_area, App.TERM_CRIT)
+			self.ret, self.track_window = cv2.CamShift(self.prob, self.search_area, __class__.TERM_CRIT)
 			self.track_box = rect_to_box(self.track_window)
 			self.search_area = expend(self.track_box, (60,60), self.w,self.h)
 
 			# if not goo enough, search everywhere
-			quality = np.mean(cutter(self.prob, self.track_box))
+			quality = self.quality(self.prob, self.track_box)
 			#print("{}".format(quality))
 			if quality<20:
 				self.search_area = self.full_box
@@ -495,15 +512,15 @@ document.getElementById("HSV-but-stop").onclick = function () { camshift_is_on =
 	def savepic(self, letter):
 		
 		# only letters
-		if not letter in App_photobooth.LETTERS:
+		if not letter in App.LETTERS:
 			return
 
 		# cut the image, make it square
-		self.square_box = centered_square_box(self.search_area)
+		self.square_box = centered_square_box(self.search_area, self.w, self.h)
 		img = cutter(self.prob, self.square_box)
 
 		# get the number
-		l = os.listdir(self.savedir)
+		l = os.listdir(self.imagedir)
 		idx = 1
 		while "{}_{}_{}.jpg".format(letter, idx, 16) in l:
 			idx += 1
@@ -516,13 +533,50 @@ document.getElementById("HSV-but-stop").onclick = function () { camshift_is_on =
 		img16 = cv2.resize(img,(16,16))
 		img224 = cv2.resize(img,(224,224))
 
-		cv2.imwrite(self.savedir + name16, img16)
-		cv2.imwrite(self.savedir + name224, img224)
+		cv2.imwrite(self.imagedir + name16, img16)
+		cv2.imwrite(self.imagedir + name224, img224)
 
 		# add to file, update tally
-		add_image(self.savedir+self.textfile, letter, img16)
-		update_tally(self.savedir+self.textfile)
+		add_image(self.textfile, letter, img16)
+		update_tally(self.textfile)
 
+		return
+	def hsv (self):
+
+		webcam_is_on = eval_js("webcam_is_on()")
+		hsv_is_on = eval_js("hsv_is_on")
+		while webcam_is_on and hsv_is_on:
+
+			self.frame = self.getimg()
+			founded, rect = self.facedetect(self.frame, self.full_box)
+
+			if founded:
+				hsv_from = np.array([int(i) for i in eval_js("HSV_from()")]).astype(np.float32)
+				hsv_to   = np.array([int(i) for i in eval_js("HSV_to()")  ]).astype(np.float32)
+
+				self.rect_box = rect_to_box(rect)
+				self.hist_box = expend(self.rect_box, (-30,-30), self.w,self.h)
+		
+				self.hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
+				self.mask = cv2.inRange(self.hsv, hsv_from, hsv_to)
+				hsv_ = cutter(self.hsv, self.hist_box)
+				mask_ = cv2.inRange(hsv_, hsv_from, hsv_to)
+		
+				self.hist = cv2.calcHist([hsv_],[0],mask_,[180],[0,180])
+				cv2.normalize(self.hist,self.hist,0,255,cv2.NORM_MINMAX)
+
+				self.prob = cv2.calcBackProject([self.hsv], [0], self.hist, [0, 180], 1)
+				self.prob &= self.mask
+
+				self.setimg(self.prob)
+
+			else:
+				self.setimg(self.frame)
+
+			# new loop ?
+			webcam_is_on = eval_js("webcam_is_on()")
+			hsv_is_on = eval_js("hsv_is_on")
+			pass
 		return
 
 #######################################################################################################################################
@@ -535,7 +589,9 @@ def load_dataset(dataset_file_path):
     a = np.loadtxt(dataset_file_path, delimiter=',', converters={ 0 : lambda ch : ord(ch)-ord('A') })
     return a[:,0], a[:,1:]
 
-class App_analyst:
+class App_analyst(App):
+
+	HTML_URL = "https://raw.githubusercontent.com/Erffa/Automatic-Signal-Detector/master/analyst.html"
 
 	DEFAULT_INPUT_PATH = "/content/gdrive/My Drive/Colab Notebooks/storage/dataset2.txt"
 
@@ -556,27 +612,11 @@ document.getElementById("btn-yes").onclick = async function () {
   await invoke("delete_line", [], {"line":this.line});
   modal.style.display = "none";
 }
-
 var gallery = document.getElementById("gallery");
 ''')
   
 	def __init__(self, path=None):
 		self.path = path
-		return
-
-	def launch(self):
-		'''
-		Launch the App object. 
-		Call to build to create the html and add some the
-		function registration 
-		'''
-		# create the interface in the cell
-		self.build()
-		# set maximal height of the cell
-		display(Javascript('''google.colab.output.setIframeHeight(0, true, {maxHeight: 680});'''))
-		# register the functions needed
-		output.register_callback('setter', self.setter)
-		output.register_callback('delete_line', self.delete_line)
 		return
 
 	@staticmethod
@@ -588,14 +628,34 @@ var gallery = document.getElementById("gallery");
 		app.launch()
 		return
 
+	def launch(self):
+		'''
+		Launch the App object. 
+		Call to build to create the html and add some the
+		function registration 
+		'''
+		# set maximal height of the cell
+		display(Javascript('''google.colab.output.setIframeHeight(0, true, {maxHeight: 680});'''))
+		# register the functions needed
+		output.register_callback('setter', self.setter)
+		output.register_callback('delete_line', self.delete_line)
+		# create the interface in the cell
+		self.build()
+		return
+
 	def build(self):
 		'''
 		Create all the html and js needed
 		'''
+		# get the html
+		html = __class__.get_github_html(__class__.HTML_URL)
+		# display the html and load the js
 		display(html)
-		display(App_analyst.js)
+		display(__class__.js)
+		# refresh the images
 		self.refresh_gallery()
 		return
+
 
 	def refresh_gallery(self, **kwars):
 		'''
@@ -614,25 +674,27 @@ var gallery = document.getElementById("gallery");
 
 		# create a row for each letter represented in the textfile 
 		for letter in all_letters:
-			App_analyst.HTML_add_row(letter)
+			__class__.HTML_add_row(letter)
 			pass
 
 		# add every image to the corresponding row
 		for i in range(len(letters)):
 			letter = int(letters[i])
 			url = "data:image/jpg;base64," + str( ndarray_to_base64( arr[i].reshape((16,16)).astype(np.uint8) ) )[2:-1]
-			App_analyst.HTML_add_image(i, letter, url)
+			__class__.HTML_add_image(i, letter, url)
 			pass
 
 		return
 
 	@staticmethod
 	def HTML_add_row(letter):
+		'''
+		Create the rows where the images of the same letter are displayed
+		'''
 		display(Javascript('''
 			let row = document.createElement("div");
 			let title = document.createElement("div");
 			let handler = document.createElement("div");
-
 			row.id = "row-{l}";
 			row.className = "row";
 			title.id = "row-title-{l}";
@@ -640,7 +702,6 @@ var gallery = document.getElementById("gallery");
 			title.innerHTML = alphabets[{l}];
 			handler.id = "letter-handler-{l}";
 			handler.className = "letter-handler";
-
 			row.appendChild(title);
 			row.appendChild(handler);
 			gallery.appendChild(row);
@@ -649,11 +710,14 @@ var gallery = document.getElementById("gallery");
   
 	@staticmethod
 	def HTML_add_image(index, letter, url):
+		'''
+		Add an image to the corresponding row.
+		The rows must be already created to have no errors.
+		'''
 		display(Javascript('''
 			let handler = document.getElementById("letter-handler-{l}");
 			let panel = document.createElement("div");
 			let image = document.createElement("img");
-
 			panel.id = "panel-{l}";
 			panel.className = "background";
 			image.id = "image-{i}";
@@ -665,7 +729,6 @@ var gallery = document.getElementById("gallery");
 			document.getElementById("confirm-modal-image").src = this.src;
 			document.getElementById("btn-yes").line = num;
 			{br}
-
 			panel.appendChild(image);
 			handler.appendChild(panel);
 			'''.format(i=index, l=letter, u=url, bl="{", br="}")))
@@ -679,22 +742,22 @@ var gallery = document.getElementById("gallery");
 		return
 
 	def delete_line(self, **kwargs):
-	if "line" in kwargs.keys():
-		# get the index of the line to delete
-		line = kwargs["line"]
-		# get all the lines
-		f = open(self.path, 'r')
-		lines = f.readlines()
-		f.close()
-		# rewrite the file
-		f = open(self.path, 'w')
-		for i in range(len(lines)):
-			if i != line:
-				f.write(lines[i])
+		if "line" in kwargs.keys():
+			# get the index of the line to delete
+			line = kwargs["line"]
+			# get all the lines
+			f = open(self.path, 'r')
+			lines = f.readlines()
+			f.close()
+			# rewrite the file
+			f = open(self.path, 'w')
+			for i in range(len(lines)):
+				if i != line:
+					f.write(lines[i])
+					pass
 				pass
+			f.close()
+			# refresh the display
+			self.refresh_gallery()
 			pass
-		f.close()
-		# refresh the display
-		self.refresh_gallery()
-		pass
-	return
+		return
