@@ -514,3 +514,177 @@ class App:
 		update_tally(self.savedir+self.textfile)
 
 		return
+
+#######################################################################################################################################
+### THE ANALYST APP ###
+#######################
+	
+
+
+def load_dataset(dataset_file_path):
+    a = np.loadtxt(dataset_file_path, delimiter=',', converters={ 0 : lambda ch : ord(ch)-ord('A') })
+    return a[:,0], a[:,1:]
+
+class App_analyst:
+
+	DEFAULT_INPUT_PATH = "/content/gdrive/My Drive/Colab Notebooks/storage/dataset2.txt"
+
+	js = Javascript('''
+// usefull constant
+var alphabets = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
+invoke = google.colab.kernel.invokeFunction;
+var gallery = document.getElementById("gallery");
+// SET THE PATH!
+var path_btn = document.getElementById("path-btn");
+var path_input = document.getElementById("path-input");
+path_input.value = "/content/gdrive/My Drive/Colab Notebooks/storage/dataset2.txt"
+path_btn.onclick = async function () {
+	await invoke("setter", [], {"path":path_input.value} );
+}
+// DELETE IMAGES
+document.getElementById("btn-yes").onclick = async function () {
+  await invoke("delete_line", [], {"line":this.line});
+  modal.style.display = "none";
+}
+
+var gallery = document.getElementById("gallery");
+''')
+  
+	def __init__(self, path=None):
+		self.path = path
+		return
+
+	def launch(self):
+		'''
+		Launch the App object. 
+		Call to build to create the html and add some the
+		function registration 
+		'''
+		# create the interface in the cell
+		self.build()
+		# set maximal height of the cell
+		display(Javascript('''google.colab.output.setIframeHeight(0, true, {maxHeight: 680});'''))
+		# register the functions needed
+		output.register_callback('setter', self.setter)
+		output.register_callback('delete_line', self.delete_line)
+		return
+
+	@staticmethod
+	def run(path=None):
+		'''
+		Create and launch an App object. Meant to be use as a solo statement in a cell
+		'''
+		app = App_analyst(path)
+		app.launch()
+		return
+
+	def build(self):
+		'''
+		Create all the html and js needed
+		'''
+		display(html)
+		display(App_analyst.js)
+		self.refresh_gallery()
+		return
+
+	def refresh_gallery(self, **kwars):
+		'''
+		Recreate the gallery element with all the images from the dataset
+		'''
+		# if path is None, nothing to do
+		if self.path == None:
+			return
+
+		# empty the current image displayer
+		display(Javascript('''gallery.innerHTML = ""; '''))
+
+		# extract the data from the textfile
+		letters, arr = load_dataset(self.path)
+		all_letters = np.unique(letters).astype(np.uint8)
+
+		# create a row for each letter represented in the textfile 
+		for letter in all_letters:
+			App_analyst.HTML_add_row(letter)
+			pass
+
+		# add every image to the corresponding row
+		for i in range(len(letters)):
+			letter = int(letters[i])
+			url = "data:image/jpg;base64," + str( ndarray_to_base64( arr[i].reshape((16,16)).astype(np.uint8) ) )[2:-1]
+			App_analyst.HTML_add_image(i, letter, url)
+			pass
+
+		return
+
+	@staticmethod
+	def HTML_add_row(letter):
+		display(Javascript('''
+			let row = document.createElement("div");
+			let title = document.createElement("div");
+			let handler = document.createElement("div");
+
+			row.id = "row-{l}";
+			row.className = "row";
+			title.id = "row-title-{l}";
+			title.className = "title";
+			title.innerHTML = alphabets[{l}];
+			handler.id = "letter-handler-{l}";
+			handler.className = "letter-handler";
+
+			row.appendChild(title);
+			row.appendChild(handler);
+			gallery.appendChild(row);
+			'''.format(l=letter)))
+		return
+  
+	@staticmethod
+	def HTML_add_image(index, letter, url):
+		display(Javascript('''
+			let handler = document.getElementById("letter-handler-{l}");
+			let panel = document.createElement("div");
+			let image = document.createElement("img");
+
+			panel.id = "panel-{l}";
+			panel.className = "background";
+			image.id = "image-{i}";
+			image.className = "stretch";
+			image.src = "{u}";
+			image.onclick = function () {bl}
+			num = parseInt(this.id.split("-")[1]);
+			modal.style.display = "block";
+			document.getElementById("confirm-modal-image").src = this.src;
+			document.getElementById("btn-yes").line = num;
+			{br}
+
+			panel.appendChild(image);
+			handler.appendChild(panel);
+			'''.format(i=index, l=letter, u=url, bl="{", br="}")))
+		return
+
+	def setter(self, **kwargs):
+		if "path" in kwargs.keys():
+			self.path = kwargs["path"]
+			self.refresh_gallery()
+			pass
+		return
+
+	def delete_line(self, **kwargs):
+	if "line" in kwargs.keys():
+		# get the index of the line to delete
+		line = kwargs["line"]
+		# get all the lines
+		f = open(self.path, 'r')
+		lines = f.readlines()
+		f.close()
+		# rewrite the file
+		f = open(self.path, 'w')
+		for i in range(len(lines)):
+			if i != line:
+				f.write(lines[i])
+				pass
+			pass
+		f.close()
+		# refresh the display
+		self.refresh_gallery()
+		pass
+	return
