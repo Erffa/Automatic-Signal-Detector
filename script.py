@@ -512,7 +512,7 @@ document.getElementById("HSV-but-stop").onclick = function () { hsv_is_on = fals
 	def savepic(self, letter):
 		
 		# only letters
-		if not letter in __app__.LETTERS:
+		if not letter in __class__.LETTERS:
 			return
 
 		# cut the image, make it square
