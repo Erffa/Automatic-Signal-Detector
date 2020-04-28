@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Dataset analysis</title>
+	<meta charset='utf-8'>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<link href='https://fonts.googleapis.com/css?family=Dancing%20Script' rel='stylesheet'>
+	<style>
+
+/* body */
+body {
+  min-height: 400px;
+}
+
+/* top */
+#path-div input {
+	width: 300px;
+}
+
+/* gallery */
+#gallery {
+	margin-top: 30px;
+	width: 800px;
+	max-height: 350px;
+	overflow-y: auto;
+	overflow-x: hidden;
+	white-space: nowrap;
+}
+.row, .row .title, .letter-handler {
+	height: 80px;
+}
+
+.row {
+	position: relative;
+	width: 800px;
+	margin-bottom: 5px;
+	background-color: rgb(214,167,123);
+	white-space: nowrap;
+}
+.row .title {
+	position: absolute;
+	width: 50px;
+	height: 100%;
+	top: 0px;
+	font-size: 30px;
+	text-align: center;
+
+}
+.letter-handler {
+	position: absolute;
+	left: 50px;
+	top: 0px;
+	width: 735px;
+	overflow-x: auto;
+	overflow-y: hidden;
+	white-space: nowrap;
+}
+.background {
+	display: inline-block;
+	margin: 0;
+	padding: 0px 5px;
+	width: 70px;
+	height: 70px;
+	top: 0px;
+}
+.stretch {
+	width:100%;
+	height:100%;
+}
+
+/* confim modal */
+.modal {
+	display: none; /* Hidden by default */
+	position: fixed; /* Stay in place */
+	z-index: 1; /* Sit on top */
+	padding-top: 100px; /* Location of the box */
+	left: 0;
+	top: 0;
+	width: 100%; /* Full width */
+	height: 100%; /* Full height */
+	overflow: auto; /* Enable scroll if needed */
+	background-color: rgb(0,0,0); /* Fallback color */
+	background-color: rgba(0,0,0,0.9); /* Black w/ opacity */
+}
+.modal-content {
+	margin: auto;
+	display: block;
+}
+.modal-text {
+	text-align: center;
+	color: white;
+	font-size: 30px;
+}
+.modal-image {
+	margin: auto;
+	display:block;
+}
+#confirm-modal-content {
+	width: 350px;
+}
+
+.close {
+	position: absolute;
+	top: 15px;
+	right: 35px;
+	color: #f1f1f1;
+	font-size: 40px;
+	font-weight: bold;
+	transition: 0.3s;
+}
+
+.close:hover, .close:focus {
+	color: #bbb;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.btn-handler {
+	padding: 10px 10px 10px 10px;
+	display: block;
+	margin: auto;
+	width: 160px;
+}
+.btn-handler .btn {
+	float: left;
+	width: 70px;
+	height: 40px;
+	margin: 0px 5px 10px 5px;
+}
+
+
+	</style>
+</head>
+<body>
+
+	<div id="confirm-modal" class="modal">
+		<span class="close">&times;</span>
+		<div id="confirm-modal-content" class="modal-content">
+			<p class="modal-text"> Are you sure ?</p>
+			<img id="confirm-modal-image" 	class="modal-image" width="200" height="200">
+			<div id="modal-btn-handler" class="btn-handler">
+				<button id="btn-yes" class="btn">Yes</button>
+				<button id="btn-no"  class="btn">No</button>
+			</div>
+		</div>
+	</div>
+
+	<div id="path-div">
+		<div class="title">Enter the path to your textfile</div>
+		<input id="path-input">
+		<button id="path-btn">display</button>
+	</div>
+  
+	<div id="gallery"></div>
+<script>
+// CODE FOR THE IMAGES 
+// make the images responsive
+var modal = document.getElementById("confirm-modal");
+document.querySelector("#confirm-modal .close").onclick = function () { modal.style.display = "none"; }
+document.getElementById("btn-no").onclick = function () { modal.style.display = "none"; }
+</script>
+</body>
+</html>
