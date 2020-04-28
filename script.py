@@ -1049,7 +1049,8 @@ document.getElementById("HSV-but-stop").onclick = function () { hsv_is_on = fals
 				prediction = self.model.predict(self.img16.reshape(1,256).astype(np.float32)/255.)
 				prediction_max = prediction.argmax()
 				predicted_letter = chr(ord('A') + prediction_max)
-
+				
+				self.vis = self.vis[:,::-1]
 				cv2.putText(
 					self.vis,
 					predicted_letter,
@@ -1058,6 +1059,7 @@ document.getElementById("HSV-but-stop").onclick = function () { hsv_is_on = fals
 					1,
 					(230),
 					2)
+				self.vis = self.vis[:,::-1]
 				pass
 
 			# affichage
