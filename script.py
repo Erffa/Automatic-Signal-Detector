@@ -303,6 +303,10 @@ class App_analyst(App):
 		self.refresh_gallery()
 		return
 
+	def load_dataset(self):
+		a = np.loadtxt(self.path, delimiter=',', converters={ 0 : lambda ch : ord(ch)-ord('A') })
+		letters, samples = a[:,1:], a[:,0]
+		return letters, samples
 
 	def refresh_gallery(self, **kwars):
 		'''
@@ -316,7 +320,7 @@ class App_analyst(App):
 		display(Javascript('''gallery.innerHTML = ""; '''))
 
 		# extract the data from the textfile
-		letters, arr = load_dataset(self.path)
+		letters, arr = self.load_dataset()
 		all_letters = np.unique(letters).astype(np.uint8)
 
 		# create a row for each letter represented in the textfile 
