@@ -305,7 +305,7 @@ class App_analyst(App):
 
 	def load_dataset(self):
 		a = np.loadtxt(self.path, delimiter=',', converters={ 0 : lambda ch : ord(ch)-ord('A') })
-		letters, samples = a[:,1:], a[:,0]
+		letters, samples = a[:,0], a[:,1:]
 		return letters, samples
 
 	def refresh_gallery(self, **kwars):
