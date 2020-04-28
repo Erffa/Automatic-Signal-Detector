@@ -257,10 +257,32 @@ def print_textfile(path):
 	return
 
 #######################################################################################################################################
-### THE APPLICATION ###
-#######################
+### THE APPS ###
+################
 
-js = Javascript('''
+
+#######################################################################################################################################
+### THE PHOTO BOOTH APP ###
+###########################
+
+class App_photobooth:
+	'''
+	The functions of this class need to be called in a certain context, 
+	were the appropriate html and js code has been loaded.
+	'''
+	# HTML location on github
+	HTML_URL = "https://raw.githubusercontent.com/Erffa/Automatic-Signal-Detector/master/photobooth.html"
+	# FACEDETECT the path to the classifier end the classifier
+	URL_FACE_CC = cv2.data.haarcascades + "haarcascade_frontalface_alt.xml"
+	FACE_CC = cv2.CascadeClassifier(cv2.samples.findFile(URL_FACE_CC))
+	# CAMSHIFT
+	TERM_CRIT = ( cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1 )
+	COLOR1 = np.array((0., 60., 32.)) # np.array((25., 76., 102.))
+	COLOR2 = np.array((180., 255., 255.)) # np.array((125., 130., 204.))
+	# SAVE IMAGES
+	LETTERS = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
+  
+	js = Javascript('''
 // save / reset last pressed key
 var code = false;
 document.addEventListener('keypress', logKey);  
@@ -295,22 +317,6 @@ document.getElementById("HSV-but-stop").onclick = function () { camshift_is_on =
 // Return pic dimensions
 
 ''')
-
-class App:
-	'''
-	The functions of this class need to be called in a certain context, 
-	were the appropriate html and js code has been loaded.
-	'''
-	# FACEDETECT the path to the classifier end the classifier
-	URL_FACE_CC = cv2.data.haarcascades + "haarcascade_frontalface_alt.xml"
-	FACE_CC = cv2.CascadeClassifier(cv2.samples.findFile(URL_FACE_CC))
-	# CAMSHIFT
-	TERM_CRIT = ( cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1 )
-	COLOR1 = np.array((0., 60., 32.)) # np.array((25., 76., 102.))
-	COLOR2 = np.array((180., 255., 255.)) # np.array((125., 130., 204.))
-	# SAVE IMAGES
-	LETTERS = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
-  
 	def __init__(self, savedir, textfile):
 		#
 		self.savedir = savedir
@@ -337,9 +343,13 @@ class App:
 		display(Javascript('''google.colab.output.setIframeHeight(0, true, {maxHeight: 680});'''))
 		# register the function
 		output.register_callback('camshift', self.camshift)
+		# get the html ; a request to get the content of the url
+		request_html = requests.get(App_photobooth.HTML_URL, allow_redirects=True)
+		# decode and exec the code
+		html = HTML(request_html.content.decode("utf-8"))
 		# upload the html
 		display(html)
-		display(js)
+		display(App_photobooth.js)
 		# launch the webcam
 		eval_js('start()')
 		# update the tally
@@ -363,7 +373,7 @@ class App:
 		gray = cv2.cvtColor(img_, cv2.COLOR_RGB2GRAY)
 		gray = cv2.equalizeHist(gray)
 		# do the recognition with ada boost
-		rects = App.FACE_CC.detectMultiScale(
+		rects = App_photobooth.FACE_CC.detectMultiScale(
 			gray, scaleFactor=1.3, minNeighbors=4,
 			minSize=(30, 30), flags=cv2.CASCADE_SCALE_IMAGE)
 		# check if anything was found
@@ -395,7 +405,7 @@ class App:
 	def compute_hist(self, img, box):
 		hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 		hsv_ = cutter(hsv, box)
-		mask_ = cv2.inRange(hsv_, App.COLOR1, App.COLOR2)
+		mask_ = cv2.inRange(hsv_, self.color1, self.color2)
 		hist = cv2.calcHist([hsv_],[0],mask_,[180],[0,180])
 		cv2.normalize(hist,hist,0,255,cv2.NORM_MINMAX)
 		return hist
@@ -485,7 +495,7 @@ class App:
 	def savepic(self, letter):
 		
 		# only letters
-		if not letter in App.LETTERS:
+		if not letter in App_photobooth.LETTERS:
 			return
 
 		# cut the image, make it square
